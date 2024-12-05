@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,22 +14,15 @@ func main() {
 		log.Fatal("TODO_PASSWORD не задан. Установите пароль в переменной окружения.")
 	}
 
-	// Определяем путь к исполняемому файлу приложения
-	for _, e := range os.Environ() {
-		fmt.Println(e)
-	}
-	wd, _ := os.Getwd()
-	fmt.Println("Current working directory:", wd)
-
-	appPath, err := os.Executable()
+	// Получаем текущую рабочую директорию
+	wd, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Ошибка получения текущей директории:", err)
 	}
 
-	// Устанавливаем путь к файлу базы данных
-	dbFile := filepath.Join(filepath.Dir(appPath), "scheduler.db")
+	// Всегда создаём базу данных в корне проекта
+	dbFile := filepath.Join(wd, "scheduler.db")
 	if envDBFile := os.Getenv("TODO_DBFILE"); envDBFile != "" {
-		// Если путь к базе данных задан в переменной окружения, используем его
 		dbFile = envDBFile
 	}
 
@@ -38,27 +30,29 @@ func main() {
 	_, err = os.Stat(dbFile)
 	var install bool
 	if err != nil {
-		// Если файл базы данных отсутствует, отмечаем, что нужно создать новую базу
-		install = true
+		install = true // База данных отсутствует, её нужно создать
 	}
 
+	// Создаём или открываем базу данных
 	if install {
-		// Создаём новую базу данных
-		createDB(dbFile)
+		db, err = createDB(dbFile)
+		if err != nil {
+			log.Fatalf("Ошибка создания базы данных: %v", err)
+		}
 		log.Println("Создана новая база данных и таблица 'scheduler', путь:", dbFile)
 	} else {
-		// Открываем существующую базу данных
-		openDB(dbFile)
+		db, err = openDB(dbFile)
+		if err != nil {
+			log.Fatalf("Ошибка открытия базы данных: %v", err)
+		}
 		log.Println("База данных уже существует.")
 	}
-	// Закрываем базу данных при завершении программы
 	defer db.Close()
 
 	// Указываем путь к статическим файлам для веб-интерфейса
 	webDir := "./web"
 	port := "7540" // Устанавливаем порт по умолчанию
 	if envPort := os.Getenv("TODO_PORT"); envPort != "" {
-		// Если порт задан в переменной окружения, используем его
 		port = envPort
 	}
 
@@ -73,7 +67,6 @@ func main() {
 	// Запускаем HTTP-сервер
 	log.Printf("Сервер запущен на порту %s...", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		// Если сервер не может запуститься, выводим ошибку и завершаем программу
 		log.Fatal(err)
 	}
 }

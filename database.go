@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -12,13 +11,14 @@ import (
 var db *sql.DB
 
 // createDB создает новую базу данных и таблицу scheduler.
-func createDB(dbFile string) {
-	var err error
-	db, err = sql.Open("sqlite3", dbFile)
+// createDB создает новую базу данных и таблицу scheduler с индексом по полю date.
+func createDB(dbFile string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
+	// Создание таблицы scheduler
 	sqlStmt := `
     CREATE TABLE scheduler (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -30,17 +30,30 @@ func createDB(dbFile string) {
     `
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
-		log.Fatalf("%q: %s\n", err, sqlStmt)
+		db.Close() // Закрываем базу, если произошла ошибка
+		return nil, fmt.Errorf("ошибка создания таблицы: %w", err)
 	}
+
+	// Создание индекса по полю date
+	indexStmt := `
+    CREATE INDEX idx_scheduler_date ON scheduler(date);
+    `
+	_, err = db.Exec(indexStmt)
+	if err != nil {
+		db.Close() // Закрываем базу, если произошла ошибка
+		return nil, fmt.Errorf("ошибка создания индекса: %w", err)
+	}
+
+	return db, nil
 }
 
 // openDB открывает существующую базу данных.
-func openDB(dbFile string) {
-	var err error
-	db, err = sql.Open("sqlite3", dbFile)
+func openDB(dbFile string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
+	return db, nil
 }
 
 // getTaskByID возвращает задачу по идентификатору

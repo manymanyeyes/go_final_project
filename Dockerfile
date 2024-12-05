@@ -39,9 +39,10 @@ COPY --from=builder /app/server .
 # Копируем фронтенд файлы
 COPY --from=builder /app/web ./web
 
-# Устанавливаем переменные окружения
+# Устанавливаем переменные окружения для работы приложения
 ENV TODO_PASSWORD=12345
 ENV TODO_PORT=7540
+ENV TODO_DBFILE=/app/scheduler.db
 
 # Указываем порт, который будет использовать приложение
 EXPOSE 7540
