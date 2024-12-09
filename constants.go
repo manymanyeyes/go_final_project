@@ -1,23 +1,18 @@
 package main
 
-// Константы для маршрутов
-const (
-	RouteNextDate = "/api/nextdate"
-	RouteTask     = "/api/task"
-	RouteTasks    = "/api/tasks"
-	RouteTaskDone = "/api/task/done"
-	RouteSignIn   = "/api/signin"
-)
+import "errors"
 
 // Константы ошибок
-const (
-	ErrorMethodNotAllowed  = "Метод не поддерживается"
-	ErrorInvalidID         = "Не указан идентификатор задачи"
-	ErrorTaskNotFound      = "Задача не найдена"
-	ErrorDecodingJSON      = "Ошибка декодирования JSON"
-	ErrorTaskTitleRequired = "Не указан заголовок задачи"
-	ErrorRepeatRule        = "Некорректное правило повторения"
-	ErrorDeletingTask      = "Ошибка при удалении задачи"
+var (
+	ErrorMethodNotAllowed  = errors.New("метод не поддерживается")
+	ErrorInvalidID         = errors.New("не указан идентификатор задачи")
+	ErrorTaskNotFound      = errors.New("задача не найдена")
+	ErrorDecodingJSON      = errors.New("ошибка декодирования JSON")
+	ErrorTaskTitleRequired = errors.New("не указан заголовок задачи")
+	ErrorRepeatRule        = errors.New("некорректное правило повторения")
+	ErrorDeletingTask      = errors.New("ошибка при удалении задачи")
+	ErrorUpdatingTask      = errors.New("ошибка при обновлении задачи")
+	ErrorAddingTask        = errors.New("ошибка при добавлении задачи")
 )
 
 // jwtKey — секретный ключ для подписи JWT-токенов.

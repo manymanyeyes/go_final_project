@@ -5,9 +5,9 @@ FROM golang:1.22.1 AS builder
 RUN apt-get update && apt-get install -y gcc g++ libc6-dev libsqlite3-dev
 
 # Включаем CGO и задаём параметры сборки для ARM64
-ENV CGO_ENABLED=1 \
-    GOOS=linux \
-    GOARCH=arm64
+ARG CGO_ENABLED=1
+ARG GOOS=linux
+ARG GOARCH=arm64
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
@@ -25,7 +25,7 @@ COPY . .
 RUN go build -o server
 
 # Второй этап: создание минимального образа
-FROM ubuntu:latest
+FROM alpine:latest
 
 # Устанавливаем SQLite CLI для работы с базой данных
 RUN apt-get update && apt-get install -y sqlite3
@@ -48,4 +48,4 @@ ENV TODO_DBFILE=/app/scheduler.db
 EXPOSE 7540
 
 # Указываем команду для запуска приложения
-CMD ["./server"]
+ENTRYPOINT ["./server"]

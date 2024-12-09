@@ -20,7 +20,7 @@ func checkTaskData(task *Task, now time.Time) error {
 	// Пробуем распарсить дату
 	parsedDate, err := time.Parse("20060102", task.Date)
 	if err != nil {
-		return fmt.Errorf(ErrorTaskNotFound)
+		return fmt.Errorf(ErrorTaskNotFound.Error())
 	}
 
 	// Если дата меньше текущей и repeat пустое, обновляем дату на текущую
@@ -30,7 +30,7 @@ func checkTaskData(task *Task, now time.Time) error {
 		// Если дата меньше текущей и есть repeat, вычисляем следующую дату
 		task.Date, err = NextDate(now, task.Date, task.Repeat)
 		if err != nil {
-			return fmt.Errorf(ErrorRepeatRule)
+			return fmt.Errorf(ErrorRepeatRule.Error())
 		}
 	}
 
@@ -103,7 +103,7 @@ func calculateNextDateWeekly(now time.Time, dateTime time.Time, repeat string) (
 	daysStr := strings.TrimSpace(repeat[2:])
 	dayStrings := strings.Split(daysStr, ",")
 	if len(dayStrings) == 0 {
-		return "", fmt.Errorf(ErrorRepeatRule)
+		return "", fmt.Errorf(ErrorRepeatRule.Error())
 	}
 
 	// Преобразуем дни недели в числа и проверяем их корректность.

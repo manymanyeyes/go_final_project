@@ -76,7 +76,7 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
 		deleteTaskHandler(w, r)
 	default:
 		// Обработка неподдерживаемых методов
-		http.Error(w, ErrorMethodNotAllowed, http.StatusMethodNotAllowed)
+		http.Error(w, ErrorMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
 	}
 }
 
@@ -112,7 +112,7 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": "Не указан идентификатор"})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorInvalidID.Error()})
 		return
 	}
 
@@ -120,7 +120,7 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	task, err := getTaskByID(id)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound.Error()})
 		return
 	}
 
@@ -156,7 +156,7 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	// Проверяем, что запрос выполнен с методом POST
 	if r.Method != http.MethodPost {
-		http.Error(w, ErrorMethodNotAllowed, http.StatusMethodNotAllowed)
+		http.Error(w, ErrorMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -165,14 +165,14 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorDecodingJSON})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorDecodingJSON.Error()})
 		return
 	}
 
 	// Проверяем обязательные поля
 	if task.Title == "" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskTitleRequired})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskTitleRequired.Error()})
 		return
 	}
 
@@ -187,7 +187,7 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	// Добавляем задачу в базу данных
 	id, err := addTask(task)
 	if err != nil {
-		http.Error(w, "Ошибка при добавлении задачи", http.StatusInternalServerError)
+		http.Error(w, ErrorAddingTask.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -200,7 +200,7 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 func editTaskHandler(w http.ResponseWriter, r *http.Request) {
 	// Проверяем, что запрос выполнен с методом PUT
 	if r.Method != http.MethodPut {
-		http.Error(w, ErrorMethodNotAllowed, http.StatusMethodNotAllowed)
+		http.Error(w, ErrorMethodNotAllowed.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -209,19 +209,19 @@ func editTaskHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorDecodingJSON})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorDecodingJSON.Error()})
 		return
 	}
 
 	// Проверяем обязательные поля
 	if task.ID == "" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorInvalidID})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorInvalidID.Error()})
 		return
 	}
 	if task.Title == "" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskTitleRequired})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskTitleRequired.Error()})
 		return
 	}
 
@@ -237,7 +237,7 @@ func editTaskHandler(w http.ResponseWriter, r *http.Request) {
 	err = updateTask(task)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound.Error()})
 		return
 	}
 
@@ -255,7 +255,7 @@ func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		// Если идентификатор отсутствует, возвращаем ошибку
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorInvalidID})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorInvalidID.Error()})
 		return
 	}
 
@@ -263,13 +263,13 @@ func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	deleted, err := deleteTaskByID(id)
 	if err != nil {
 		// Если произошла ошибка выполнения запроса к базе данных, возвращаем ошибку
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorDeletingTask})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorDeletingTask.Error()})
 		return
 	}
 
 	// Если задача не была удалена
 	if !deleted {
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound.Error()})
 		return
 	}
 
@@ -281,12 +281,11 @@ func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
 	// Устанавливаем заголовок для ответа в формате JSON
 	w.Header().Set("Content-Type", "application/json")
-
 	// Получаем идентификатор задачи из параметров запроса
 	id := r.FormValue("id")
 	if id == "" {
 		// Если идентификатор отсутствует, возвращаем ошибку
-		json.NewEncoder(w).Encode(map[string]string{"error": ErrorInvalidID})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorInvalidID.Error()})
 		return
 	}
 
@@ -303,13 +302,13 @@ func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
 		deleted, err := deleteTaskByID(id)
 		if err != nil {
 			// Если возникла ошибка при удалении задачи
-			json.NewEncoder(w).Encode(map[string]string{"error": ErrorDeletingTask})
+			json.NewEncoder(w).Encode(map[string]string{"error": ErrorDeletingTask.Error()})
 			return
 		}
 
 		if !deleted {
 			// Если задача не была удалена
-			json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound})
+			json.NewEncoder(w).Encode(map[string]string{"error": ErrorTaskNotFound.Error()})
 			return
 		}
 
@@ -323,7 +322,7 @@ func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
 	nextDate, err := NextDate(now, task.Date, task.Repeat)
 	if err != nil {
 		// Если ошибка в вычислении следующей даты
-		json.NewEncoder(w).Encode(map[string]string{"error": "Ошибка вычисления следующей даты"})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorRepeatRule.Error()})
 		return
 	}
 
@@ -331,7 +330,7 @@ func taskDoneHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = db.Exec("UPDATE scheduler SET date = ? WHERE id = ?", nextDate, id)
 	if err != nil {
 		// Если произошла ошибка обновления задачи
-		json.NewEncoder(w).Encode(map[string]string{"error": "Ошибка при обновлении задачи"})
+		json.NewEncoder(w).Encode(map[string]string{"error": ErrorUpdatingTask.Error()})
 		return
 	}
 

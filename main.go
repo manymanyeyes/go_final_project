@@ -4,48 +4,25 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 )
+
+// registerRoute регистрирует маршруты с учётом необходимости аутентификации
+func registerRoute(path string, handler http.HandlerFunc, useAuth bool) {
+	if useAuth {
+		http.HandleFunc(path, authMiddleware(handler))
+	} else {
+		http.HandleFunc(path, handler)
+	}
+}
 
 func main() {
 	// Проверяем наличие пароля в переменной окружения
 	password := os.Getenv("TODO_PASSWORD")
-	if password == "" {
-		log.Fatal("TODO_PASSWORD не задан. Установите пароль в переменной окружения.")
-	}
+	useAuth := password != "" // Определяем, нужна ли аутентификация
 
-	// Получаем текущую рабочую директорию
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal("Ошибка получения текущей директории:", err)
-	}
-
-	// Всегда создаём базу данных в корне проекта
-	dbFile := filepath.Join(wd, "scheduler.db")
-	if envDBFile := os.Getenv("TODO_DBFILE"); envDBFile != "" {
-		dbFile = envDBFile
-	}
-
-	// Проверяем, существует ли файл базы данных
-	_, err = os.Stat(dbFile)
-	var install bool
-	if err != nil {
-		install = true // База данных отсутствует, её нужно создать
-	}
-
-	// Создаём или открываем базу данных
-	if install {
-		db, err = createDB(dbFile)
-		if err != nil {
-			log.Fatalf("Ошибка создания базы данных: %v", err)
-		}
-		log.Println("Создана новая база данных и таблица 'scheduler', путь:", dbFile)
-	} else {
-		db, err = openDB(dbFile)
-		if err != nil {
-			log.Fatalf("Ошибка открытия базы данных: %v", err)
-		}
-		log.Println("База данных уже существует.")
+	// Инициализируем базу данных
+	if err := InitDB(); err != nil {
+		log.Fatalf("Ошибка инициализации базы данных: %v", err)
 	}
 	defer db.Close()
 
@@ -57,12 +34,21 @@ func main() {
 	}
 
 	// Настраиваем маршруты
-	http.Handle("/", http.FileServer(http.Dir(webDir)))             // web-файлы
-	http.HandleFunc(RouteSignIn, signHandler)                       // Эндпоинт для аутентификации
-	http.HandleFunc(RouteNextDate, nextDateHandler)                 // GET-запрос для вычисления следующей даты
-	http.HandleFunc(RouteTask, authMiddleware(taskHandler))         // Объединённый обработчик для /api/task
-	http.HandleFunc(RouteTasks, authMiddleware(getTasksHandler))    // GET-запрос для списка задач
-	http.HandleFunc(RouteTaskDone, authMiddleware(taskDoneHandler)) // POST-запрос для выполнения задачи
+	// web-файлы
+	http.Handle("/", http.FileServer(http.Dir(webDir)))
+	// GET-запрос для вычисления следующей даты
+	registerRoute("/api/nextdate", nextDateHandler, false)
+	// Эндпоинт для аутентификации, регистрируется только если нужен пароль
+	if useAuth {
+		log.Println("Аутентификация включена")
+		http.HandleFunc("/api/signin", signHandler)
+	} else {
+		log.Println("Аутентификация отключена")
+	}
+	// Регистрация маршрутов, зависящих от аутентификации
+	registerRoute("/api/task", taskHandler, useAuth)          // Объединённый обработчик для /api/task
+	registerRoute("/api/tasks", getTasksHandler, useAuth)     // GET-запрос для списка задач
+	registerRoute("/api/task/done", taskDoneHandler, useAuth) // POST-запрос для выполнения задачи
 
 	// Запускаем HTTP-сервер
 	log.Printf("Сервер запущен на порту %s...", port)
